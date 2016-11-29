@@ -6,8 +6,8 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     app:layout_behavior="@string/appbar_scrolling_view_behavior"
-    tools:context="com.fsh.poc.cfr.MainActivity"
-    tools:showIn="@layout/activity_main">
+    tools:context="com.fsh.poc.cfr.todos.ui.TodoActivity"
+    tools:showIn="@layout/activity_todo">
 
     <android.support.v4.widget.SwipeRefreshLayout
         android:id="@+id/ptr_layout"
@@ -17,10 +17,11 @@
         <android.support.v7.widget.RecyclerView
             android:id="@+id/rv_todo_items"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:padding="16dp">
+            android:padding="8dp"
+            android:layout_height="match_parent">
 
         </android.support.v7.widget.RecyclerView>
 
     </android.support.v4.widget.SwipeRefreshLayout>
 </RelativeLayout>
+

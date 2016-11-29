@@ -1,9 +1,12 @@
 package com.fsh.poc.cfr.todos;
 
+import com.fsh.poc.cfr.framework.IAction;
 import com.fsh.poc.cfr.framework.IStore;
 
 import java.io.Serializable;
 import java.util.List;
+
+import rx.Observable;
 
 /**
  * Created by fshamim on 26/11/2016.
@@ -11,19 +14,30 @@ import java.util.List;
 
 public interface TodoStore extends IStore {
 
+    Observable<State> asObservable();
+
     enum TodoFilter {
-        ALL, COMPLETED, NOT_COMPLETED
+        ALL, COMPLETED, INCOMPLETE
     }
 
     public static class State {
-        final boolean isProcessing;
-        final List<TodoPoJo> todos;
-        final TodoFilter filter;
+        public final boolean isProcessing;
+        public final List<TodoPoJo> todos;
+        public final TodoFilter filter;
 
         public State(boolean isProcessing, List<TodoPoJo> todos, TodoFilter filter) {
             this.isProcessing = isProcessing;
             this.todos = todos;
             this.filter = filter;
+        }
+
+        @Override
+        public String toString() {
+            return "State{" +
+                    "isProcessing=" + isProcessing +
+                    ", todos=" + todos +
+                    ", filter=" + filter +
+                    '}';
         }
     }
 
@@ -46,7 +60,14 @@ public interface TodoStore extends IStore {
         }
     }
 
-    public static class ToggleTodoAction implements Serializable {
+    public static abstract class TodoStoreAction implements IAction {
+        @Override
+        public Class getAssociatedStore() {
+            return TodoStore.class;
+        }
+    }
+
+    public static class ToggleTodoAction extends TodoStoreAction {
         public final String todoId;
 
         public ToggleTodoAction(String todoId) {
@@ -54,7 +75,7 @@ public interface TodoStore extends IStore {
         }
     }
 
-    public static class AddTodoAction implements Serializable {
+    public static class AddTodoAction extends TodoStoreAction {
         public final String text;
 
         public AddTodoAction(String text) {
@@ -62,7 +83,7 @@ public interface TodoStore extends IStore {
         }
     }
 
-    public static class UpdateTodoAction implements Serializable {
+    public static class UpdateTodoAction extends TodoStoreAction {
         public final TodoPoJo todo;
 
         public UpdateTodoAction(TodoPoJo todo) {
@@ -70,7 +91,7 @@ public interface TodoStore extends IStore {
         }
     }
 
-    public static class ApplyFilterAction implements Serializable {
+    public static class ApplyFilterAction extends TodoStoreAction {
         public final TodoFilter filter;
 
         public ApplyFilterAction(TodoFilter filter) {
@@ -78,7 +99,15 @@ public interface TodoStore extends IStore {
         }
     }
 
-    public static class ClearAllCompletedAction implements Serializable {
+    public static class ClearAllCompletedAction extends TodoStoreAction {
+
+    }
+
+    public static class ClearAllAction extends TodoStoreAction {
+
+    }
+
+    public static class RefreshTodosAction extends TodoStoreAction {
 
     }
 }

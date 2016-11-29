@@ -1,6 +1,5 @@
 package com.fsh.poc.cfr.framework;
 
-import java.io.Serializable;
 import java.util.AbstractMap;
 
 /**
@@ -8,7 +7,7 @@ import java.util.AbstractMap;
  * from FIFO queues
  * Created by fshamim on 22.08.15.
  */
-public interface IEventQueue {
+public interface IActionQueue {
 
     /**
      * Add an event to the processor
@@ -16,21 +15,21 @@ public interface IEventQueue {
      * @param event to be added in the processor
      * @return true if added false otherwise.
      */
-    boolean addEvent(String processor, Serializable event);
+    boolean addAction(String processor, IAction event);
 
     /**
      * Retrieve an event from the processor
      *
      * @return top of the processor
      */
-    AbstractMap.SimpleImmutableEntry<String, Serializable> getEvent();
+    AbstractMap.SimpleImmutableEntry<String, IAction> getAction();
 
     /**
      * Remove an event from the processor
      *
      * @return removed event
      */
-    AbstractMap.SimpleImmutableEntry<String, Serializable> removeEvent();
+    AbstractMap.SimpleImmutableEntry<String, IAction> removeAction();
 
     void clear();
 }

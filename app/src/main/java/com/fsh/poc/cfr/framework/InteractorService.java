@@ -5,13 +5,8 @@ import android.content.Intent;
 import android.os.IBinder;
 import android.util.Log;
 
-
 import com.fsh.poc.cfr.App;
 
-import org.greenrobot.eventbus.EventBus;
-import org.greenrobot.eventbus.Subscribe;
-
-import java.io.Serializable;
 import java.util.AbstractMap;
 
 import rx.subscriptions.CompositeSubscription;
@@ -20,10 +15,9 @@ public class InteractorService extends Service {
     public static final String TAG = InteractorService.class.getSimpleName();
 
     App app;
-    private CompositeSubscription s;
-    private IEventQueue queue;
-    private EventBus eventBus;
-    private volatile boolean running;
+    CompositeSubscription s;
+    IActionQueue queue;
+    volatile boolean running;
 
 
     @Override
@@ -32,15 +26,12 @@ public class InteractorService extends Service {
         Log.d(TAG, "onCreate");
         app = (App) getApplication();
         queue = app.getEventQueue();
-        eventBus = EventBus.getDefault();
-        eventBus.register(this);
     }
 
     @Override
     public void onDestroy() {
         super.onDestroy();
         Log.d(TAG, "<-------------onDestroy");
-        eventBus.unregister(this);
         running = false;
     }
 
@@ -71,7 +62,7 @@ public class InteractorService extends Service {
 
     private void execute() {
         Log.d(TAG, "onExecute");
-        AbstractMap.SimpleImmutableEntry<String, Serializable> entry = queue.getEvent();
+        AbstractMap.SimpleImmutableEntry<String, IAction> entry = queue.getAction();
         if (entry == null) {
             Log.d(TAG, "Stopping Service");
             stopSelf();
@@ -80,31 +71,14 @@ public class InteractorService extends Service {
         boolean executing = false;
         String key = entry.getKey();
         Log.d(TAG, "processing");
-//        if (key.equals(TaskStore.class.getSimpleName())) {
-//            executing = true;
-//            TaskStore interactor = app.getUseCaseStore().getTaskStore();
-//            interactor.processEvent(entry.getValue());
-//            eventBus.post(new TryFinishServiceEvent());
-//        }
-        if (!executing) {
-            Log.d(TAG, "no further event for processing, finishing...");
-            stopSelf();
-        }
-    }
-
-    @Subscribe
-    public void onEvent(TryFinishServiceEvent event) {
-        Log.d(TAG, "onTryFinishServiceEvent: ");
+        IStore store = app.getUseCaseStore().getStore(key);
+        store.processAction(entry.getValue());
         stopServiceIfFinished();
     }
 
     private void stopServiceIfFinished() {
         Log.d(TAG, "onStopServiceIfFinished: ");
-        queue.removeEvent();
+        queue.removeAction();
         execute();
-    }
-
-    private class TryFinishServiceEvent {
-
     }
 }
