@@ -9,13 +9,10 @@ import com.fsh.poc.cfr.App;
 
 import java.util.AbstractMap;
 
-import rx.subscriptions.CompositeSubscription;
-
 public class InteractorService extends Service {
     public static final String TAG = InteractorService.class.getSimpleName();
 
     App app;
-    CompositeSubscription s;
     IActionQueue queue;
     volatile boolean running;
 

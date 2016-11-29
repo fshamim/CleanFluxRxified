@@ -42,10 +42,11 @@ public class TodoAdapter extends RecyclerView.Adapter<TodoAdapter.TodoVH> {
         final TodoPoJo todo = todos.get(position);
         holder.tvText.setText(todo.getText());
         holder.chkIsDone.setChecked(todo.isCompleted());
-        holder.chkIsDone.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+        holder.chkIsDone.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
+            public void onClick(View view) {
                 EventBus.getDefault().post(new TodoStore.ToggleTodoAction(todo.getId()));
+
             }
         });
     }
@@ -53,15 +54,13 @@ public class TodoAdapter extends RecyclerView.Adapter<TodoAdapter.TodoVH> {
     public synchronized void updateTodos(List<TodoPoJo> todos) {
         final TodoDiffCallback callback = new TodoDiffCallback(this.todos, todos);
         final DiffUtil.DiffResult result = DiffUtil.calculateDiff(callback);
-        this.todos.clear();
-        this.todos.addAll(todos);
-        result.dispatchUpdatesTo(this);
     }
 
     @Override
     public int getItemCount() {
         return todos.size();
     }
+
 
     public static class TodoVH extends RecyclerView.ViewHolder {
 

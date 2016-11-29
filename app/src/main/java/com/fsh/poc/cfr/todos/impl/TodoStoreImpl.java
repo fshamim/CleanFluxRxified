@@ -3,18 +3,16 @@ package com.fsh.poc.cfr.todos.impl;
 import com.fsh.poc.cfr.framework.IAction;
 import com.fsh.poc.cfr.todos.TodoPoJo;
 import com.fsh.poc.cfr.todos.TodoStore;
-import com.jakewharton.rxrelay.BehaviorRelay;
-
-import org.pcollections.TreePVector;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
-import java.util.UUID;
 
-import rx.Observable;
-import rx.functions.Action1;
-import rx.functions.Func1;
-import rx.observables.BlockingObservable;
+import io.reactivex.Flowable;
+import io.reactivex.Observable;
+import io.reactivex.functions.Predicate;
+import io.reactivex.processors.BehaviorProcessor;
 
 /**
  * Created by fshamim on 27/11/2016.
@@ -22,21 +20,24 @@ import rx.observables.BlockingObservable;
 
 public class TodoStoreImpl implements TodoStore {
 
-    BehaviorRelay<State> relay;
-    TreePVector<TodoPoJo> todos;
+    BehaviorProcessor<State> relay;
+    List<TodoPoJo> todos;
     boolean isProcessing;
     TodoFilter filter;
+    int counter = 0;
 
     public TodoStoreImpl() {
-        todos = TreePVector.empty();
+        todos = new ArrayList<>();
         isProcessing = false;
         filter = TodoFilter.ALL;
-        relay = BehaviorRelay.create(getState());
+        relay = BehaviorProcessor.createDefault(getState());
     }
 
     private State getState() {
         if (filter == TodoFilter.ALL) {
-            return new State(isProcessing, TreePVector.from(todos), filter);
+            List<TodoPoJo> copy = new ArrayList<>();
+            copy.addAll(todos);
+            return new State(isProcessing, copy, filter);
         } else {
             List<TodoPoJo> filteredList = new ArrayList<>();
             for (int i = 0; i < todos.size(); ++i) {
@@ -53,21 +54,16 @@ public class TodoStoreImpl implements TodoStore {
 
 
     private void clearAllCompletedTodos(ClearAllCompletedAction action) {
-        Observable.from(todos)
-                .filter(new Func1<TodoPoJo, Boolean>() {
+        List<TodoPoJo> completedTodos = Observable.fromIterable(todos)
+                .filter(new Predicate<TodoPoJo>() {
                     @Override
-                    public Boolean call(TodoPoJo todoPoJo) {
+                    public boolean test(TodoPoJo todoPoJo) throws Exception {
                         return todoPoJo.isCompleted();
                     }
                 })
                 .toList()
-                .toBlocking()
-                .subscribe(new Action1<List<TodoPoJo>>() {
-                    @Override
-                    public void call(List<TodoPoJo> todoPoJos) {
-                        todos = todos.minusAll(todoPoJos);
-                    }
-                });
+                .blockingGet();
+        todos.removeAll(completedTodos);
     }
 
     private void updateTodo(UpdateTodoAction action) {
@@ -82,7 +78,7 @@ public class TodoStoreImpl implements TodoStore {
 
 
     private void publishState() {
-        relay.call(getState());
+        relay.onNext(getState());
     }
 
     private void toggleTodo(final ToggleTodoAction action) {
@@ -90,7 +86,8 @@ public class TodoStoreImpl implements TodoStore {
             TodoPoJo todo = todos.get(i);
             if (todo.getId().equals(action.todoId)) {
                 TodoPoJo toggledTodo = new TodoPoJo(todo.getId(), todo.getText(), !todo.isCompleted());
-                todos = (TreePVector<TodoPoJo>) todos.with(i, toggledTodo);
+                todos.set(i, toggledTodo);
+                break;
             }
         }
     }
@@ -106,7 +103,8 @@ public class TodoStoreImpl implements TodoStore {
         if (action instanceof ToggleTodoAction) {
             toggleTodo((ToggleTodoAction) action);
         } else if (action instanceof AddTodoAction) {
-            todos = todos.plus(new TodoPoJo(UUID.randomUUID().toString(), ((AddTodoAction) action).text, false));
+            String id = counter++ + " Todo";
+            todos.add(new TodoPoJo(id, id, false));
         } else if (action instanceof UpdateTodoAction) {
             updateTodo((UpdateTodoAction) action);
         } else if (action instanceof ClearAllCompletedAction) {
@@ -114,13 +112,13 @@ public class TodoStoreImpl implements TodoStore {
         } else if (action instanceof ApplyFilterAction) {
             this.filter = ((ApplyFilterAction) action).filter;
         } else if (action instanceof ClearAllAction) {
-            todos = TreePVector.empty();
+            todos.clear();
         }
         updateAndPublishState(false);
     }
 
     @Override
-    public Observable<State> asObservable() {
-        return relay.asObservable();
+    public Flowable<State> asFlowable() {
+        return relay.serialize();
     }
 }

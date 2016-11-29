@@ -6,7 +6,7 @@ import com.fsh.poc.cfr.framework.IStore;
 import java.io.Serializable;
 import java.util.List;
 
-import rx.Observable;
+import io.reactivex.Flowable;
 
 /**
  * Created by fshamim on 26/11/2016.
@@ -14,7 +14,7 @@ import rx.Observable;
 
 public interface TodoStore extends IStore {
 
-    Observable<State> asObservable();
+    Flowable<State> asFlowable();
 
     enum TodoFilter {
         ALL, COMPLETED, INCOMPLETE
@@ -38,6 +38,26 @@ public interface TodoStore extends IStore {
                     ", todos=" + todos +
                     ", filter=" + filter +
                     '}';
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+
+            State state = (State) o;
+
+            if (isProcessing != state.isProcessing) return false;
+            if (todos != null ? !todos.equals(state.todos) : state.todos != null) return false;
+            return filter == state.filter;
+        }
+
+        @Override
+        public int hashCode() {
+            int result = (isProcessing ? 1 : 0);
+            result = 31 * result + (todos != null ? todos.hashCode() : 0);
+            result = 31 * result + (filter != null ? filter.hashCode() : 0);
+            return result;
         }
     }
 

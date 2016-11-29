@@ -47,7 +47,7 @@ public class ActionQueue implements IActionQueue {
     public AbstractMap.SimpleImmutableEntry<String, IAction> removeAction() {
         BlockingQueue<AbstractMap.SimpleImmutableEntry<String, IAction>> q = getQueue();
         AbstractMap.SimpleImmutableEntry<String, IAction> entry = q.poll();
-        Log.d(TAG, "Action removed: " + entry.getValue());
+        Log.d(TAG, "Action removed: " + entry);
         return entry;
     }
 

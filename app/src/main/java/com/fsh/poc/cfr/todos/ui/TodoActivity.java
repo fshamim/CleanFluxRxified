@@ -4,6 +4,8 @@ import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.util.DiffUtil;
+import android.support.v7.util.ListUpdateCallback;
 import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -19,15 +21,20 @@ import com.fsh.poc.cfr.todos.TodoPoJo;
 import com.fsh.poc.cfr.todos.TodoStore;
 
 import org.greenrobot.eventbus.EventBus;
+import org.javatuples.Pair;
 
 import java.util.ArrayList;
 import java.util.UUID;
 
-import rx.Observable;
-import rx.Observer;
-import rx.android.schedulers.AndroidSchedulers;
-import rx.schedulers.Schedulers;
-import rx.subscriptions.CompositeSubscription;
+import io.reactivex.Flowable;
+import io.reactivex.android.schedulers.AndroidSchedulers;
+import io.reactivex.disposables.CompositeDisposable;
+import io.reactivex.functions.Function;
+import io.reactivex.internal.operators.flowable.FlowableOnBackpressureDrop;
+import io.reactivex.schedulers.Schedulers;
+import io.reactivex.subscribers.DefaultSubscriber;
+import io.reactivex.subscribers.DisposableSubscriber;
+import io.reactivex.subscribers.SerializedSubscriber;
 
 public class TodoActivity extends AppCompatActivity {
 
@@ -35,7 +42,7 @@ public class TodoActivity extends AppCompatActivity {
     TodoStore store;
     RecyclerView rvTodos;
     TodoAdapter todoAdapter;
-    CompositeSubscription subs;
+    CompositeDisposable subs;
     SwipeRefreshLayout ptrLayout;
     TodoStore.TodoFilter filter = TodoStore.TodoFilter.ALL;
     Menu menu;
@@ -78,26 +85,13 @@ public class TodoActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        subs = new CompositeSubscription();
-        Observable<TodoStore.State> o = store.asObservable();
-        subs.add(o
-                .subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(new Observer<TodoStore.State>() {
+        subs = new CompositeDisposable();
+        Flowable<TodoStore.State> o = store.asFlowable();
+
+        subs.add(o.observeOn(AndroidSchedulers.mainThread())
+                .map(new Function<TodoStore.State, TodoStore.State>() {
                     @Override
-                    public void onCompleted() {
-
-                    }
-
-                    @Override
-                    public void onError(Throwable e) {
-                        e.printStackTrace();
-
-                    }
-
-                    @Override
-                    public void onNext(final TodoStore.State state) {
-                        Log.d(TAG, "onNext: ");
+                    public TodoStore.State apply(TodoStore.State state) throws Exception {
                         final boolean isProcessing = state.isProcessing;
                         ptrLayout.postDelayed(new Runnable() {
                             @Override
@@ -105,24 +99,63 @@ public class TodoActivity extends AppCompatActivity {
                                 ptrLayout.setRefreshing(isProcessing);
                             }
                         }, 50);
-                        if (!isProcessing) {
-                            todoAdapter.updateTodos(state.todos);
+
+                        if (menu != null && filter != state.filter) {
                             filter = state.filter;
-                            if (menu != null) {
-                                menu.findItem(R.id.menu_sort_by_all).setChecked(filter.equals(TodoStore.TodoFilter.ALL));
-                                menu.findItem(R.id.menu_sort_by_completed).setChecked(filter.equals(TodoStore.TodoFilter.COMPLETED));
-                                menu.findItem(R.id.menu_sort_by_incompleted).setChecked(filter.equals(TodoStore.TodoFilter.INCOMPLETE));
-                            }
+                            menu.findItem(R.id.menu_sort_by_all).setChecked(filter.equals(TodoStore.TodoFilter.ALL));
+                            menu.findItem(R.id.menu_sort_by_completed).setChecked(filter.equals(TodoStore.TodoFilter.COMPLETED));
+                            menu.findItem(R.id.menu_sort_by_incompleted).setChecked(filter.equals(TodoStore.TodoFilter.INCOMPLETE));
                         }
+                        return state;
+                    }
+                })
+                .subscribeOn(Schedulers.io())
+                .map(new Function<TodoStore.State, Pair<TodoStore.State, DiffUtil.DiffResult>>() {
+                    @Override
+                    public Pair<TodoStore.State, DiffUtil.DiffResult> apply(TodoStore.State state) throws Exception {
+                        final boolean isProcessing = state.isProcessing;
+                        DiffUtil.DiffResult result = null;
+                        if (!isProcessing) {
+                            final TodoAdapter.TodoDiffCallback callback = new TodoAdapter.TodoDiffCallback(todoAdapter.todos, state.todos);
+                            result = DiffUtil.calculateDiff(callback);
+                            todoAdapter.todos.clear();
+                            todoAdapter.todos.addAll(state.todos);
+                        }
+                        return new Pair<>(state, result);
+                    }
+                })
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribeWith(new DisposableSubscriber<Pair<TodoStore.State, DiffUtil.DiffResult>>() {
+
+                    @Override
+                    protected void onStart() {
+                        request(1);
+                    }
+
+                    @Override
+                    public void onNext(Pair<TodoStore.State, DiffUtil.DiffResult> pair) {
+                        if (!pair.getValue0().isProcessing) {
+                            pair.getValue1().dispatchUpdatesTo(todoAdapter);
+                        }
+                        request(1);
+                    }
+
+                    @Override
+                    public void onError(Throwable t) {
+                        t.printStackTrace();
+                    }
+
+                    @Override
+                    public void onComplete() {
                     }
                 }));
-
     }
 
     @Override
     protected void onPause() {
         super.onPause();
-        subs.unsubscribe();
+        subs.dispose();
+
     }
 
     @Override
