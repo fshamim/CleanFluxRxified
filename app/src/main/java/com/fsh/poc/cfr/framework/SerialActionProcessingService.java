@@ -9,8 +9,8 @@ import com.fsh.poc.cfr.App;
 
 import java.util.AbstractMap;
 
-public class InteractorService extends Service {
-    public static final String TAG = InteractorService.class.getSimpleName();
+public class SerialActionProcessingService extends Service {
+    public static final String TAG = SerialActionProcessingService.class.getSimpleName();
 
     App app;
     IActionQueue queue;
@@ -65,15 +65,10 @@ public class InteractorService extends Service {
             stopSelf();
             return;
         }
-        boolean executing = false;
         String key = entry.getKey();
         Log.d(TAG, "processing");
         IStore store = app.getUseCaseStore().getStore(key);
         store.processAction(entry.getValue());
-        stopServiceIfFinished();
-    }
-
-    private void stopServiceIfFinished() {
         Log.d(TAG, "onStopServiceIfFinished: ");
         queue.removeAction();
         execute();

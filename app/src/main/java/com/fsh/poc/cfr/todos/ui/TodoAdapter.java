@@ -51,11 +51,6 @@ public class TodoAdapter extends RecyclerView.Adapter<TodoAdapter.TodoVH> {
         });
     }
 
-    public synchronized void updateTodos(List<TodoPoJo> todos) {
-        final TodoDiffCallback callback = new TodoDiffCallback(this.todos, todos);
-        final DiffUtil.DiffResult result = DiffUtil.calculateDiff(callback);
-    }
-
     @Override
     public int getItemCount() {
         return todos.size();

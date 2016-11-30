@@ -5,7 +5,7 @@ import android.content.Intent;
 
 import com.fsh.poc.cfr.framework.Dispatcher;
 import com.fsh.poc.cfr.framework.IActionQueue;
-import com.fsh.poc.cfr.framework.InteractorService;
+import com.fsh.poc.cfr.framework.SerialActionProcessingService;
 import com.fsh.poc.cfr.framework.UseCaseStore;
 import com.fsh.poc.cfr.framework.impl.ActionQueue;
 import com.fsh.poc.cfr.todos.TodoStore;
@@ -29,7 +29,7 @@ public class App extends Application {
         getEventQueue();
         getDispatcher();
         getUseCaseStore();
-        startService(new Intent(this, InteractorService.class));
+        startService(new Intent(this, SerialActionProcessingService.class));
     }
 
     public UseCaseStore getUseCaseStore() {

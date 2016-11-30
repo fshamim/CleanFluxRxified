@@ -38,7 +38,7 @@ public class Dispatcher {
      * from the queue
      */
     private void notifyService() {
-        Intent intent = new Intent(app, InteractorService.class);
+        Intent intent = new Intent(app, SerialActionProcessingService.class);
         app.startService(intent);
     }
 

@@ -1,5 +1,6 @@
 package com.fsh.poc.cfr.todos.ui;
 
+import android.content.Context;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.widget.SwipeRefreshLayout;
@@ -10,6 +11,7 @@ import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
+import android.util.AttributeSet;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -76,7 +78,7 @@ public class TodoActivity extends AppCompatActivity {
         });
 
         rvTodos = (RecyclerView) findViewById(R.id.rv_todo_items);
-        rvTodos.setLayoutManager(new LinearLayoutManager(this));
+        rvTodos.setLayoutManager(new WrapContentLinearLayoutManager(this));
         rvTodos.setItemAnimator(new DefaultItemAnimator());
         todoAdapter = new TodoAdapter(new ArrayList<TodoPoJo>());
         rvTodos.setAdapter(todoAdapter);
@@ -99,13 +101,8 @@ public class TodoActivity extends AppCompatActivity {
                                 ptrLayout.setRefreshing(isProcessing);
                             }
                         }, 50);
-
-                        if (menu != null && filter != state.filter) {
-                            filter = state.filter;
-                            menu.findItem(R.id.menu_sort_by_all).setChecked(filter.equals(TodoStore.TodoFilter.ALL));
-                            menu.findItem(R.id.menu_sort_by_completed).setChecked(filter.equals(TodoStore.TodoFilter.COMPLETED));
-                            menu.findItem(R.id.menu_sort_by_incompleted).setChecked(filter.equals(TodoStore.TodoFilter.INCOMPLETE));
-                        }
+                        filter = state.filter;
+                        supportInvalidateOptionsMenu();
                         return state;
                     }
                 })
@@ -135,7 +132,10 @@ public class TodoActivity extends AppCompatActivity {
                     @Override
                     public void onNext(Pair<TodoStore.State, DiffUtil.DiffResult> pair) {
                         if (!pair.getValue0().isProcessing) {
-                            pair.getValue1().dispatchUpdatesTo(todoAdapter);
+                            DiffUtil.DiffResult diffResult = pair.getValue1();
+                            if (diffResult != null) {
+                                diffResult.dispatchUpdatesTo(todoAdapter);
+                            }
                         }
                         request(1);
                     }
@@ -167,6 +167,15 @@ public class TodoActivity extends AppCompatActivity {
     }
 
     @Override
+    public boolean onPrepareOptionsMenu(Menu menu) {
+        super.onPrepareOptionsMenu(menu);
+        menu.findItem(R.id.menu_sort_by_all).setChecked(filter == TodoStore.TodoFilter.ALL);
+        menu.findItem(R.id.menu_sort_by_completed).setChecked(filter == TodoStore.TodoFilter.COMPLETED);
+        menu.findItem(R.id.menu_sort_by_incompleted).setChecked(filter == TodoStore.TodoFilter.INCOMPLETE);
+        return true;
+    }
+
+    @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         int id = item.getItemId();
         switch (id) {
@@ -191,5 +200,28 @@ public class TodoActivity extends AppCompatActivity {
         }
 
         return super.onOptionsItemSelected(item);
+    }
+
+    public static class WrapContentLinearLayoutManager extends LinearLayoutManager {
+        public WrapContentLinearLayoutManager(Context context) {
+            super(context);
+        }
+
+        public WrapContentLinearLayoutManager(Context context, int orientation, boolean reverseLayout) {
+            super(context, orientation, reverseLayout);
+        }
+
+        public WrapContentLinearLayoutManager(Context context, AttributeSet attrs, int defStyleAttr, int defStyleRes) {
+            super(context, attrs, defStyleAttr, defStyleRes);
+        }
+
+        @Override
+        public void onLayoutChildren(RecyclerView.Recycler recycler, RecyclerView.State state) {
+            try {
+                super.onLayoutChildren(recycler, state);
+            } catch (IndexOutOfBoundsException e) {
+                e.printStackTrace();
+            }
+        }
     }
 }

@@ -8,9 +8,12 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Random;
+import java.util.concurrent.TimeUnit;
 
 import io.reactivex.Flowable;
 import io.reactivex.Observable;
+import io.reactivex.functions.Consumer;
 import io.reactivex.functions.Predicate;
 import io.reactivex.processors.BehaviorProcessor;
 
@@ -100,6 +103,9 @@ public class TodoStoreImpl implements TodoStore {
     @Override
     public void processAction(IAction action) {
         updateAndPublishState(true);
+        //simulate work
+        int randomDelay = new Random().nextInt(10);
+        Observable.just(1).delay(randomDelay, TimeUnit.SECONDS).blockingSubscribe();
         if (action instanceof ToggleTodoAction) {
             toggleTodo((ToggleTodoAction) action);
         } else if (action instanceof AddTodoAction) {
@@ -119,6 +125,6 @@ public class TodoStoreImpl implements TodoStore {
 
     @Override
     public Flowable<State> asFlowable() {
-        return relay.serialize();
+        return relay;
     }
 }
