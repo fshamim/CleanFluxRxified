@@ -6,7 +6,6 @@ import android.support.design.widget.FloatingActionButton;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.util.DiffUtil;
-import android.support.v7.util.ListUpdateCallback;
 import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -78,7 +77,7 @@ public class TodoActivity extends AppCompatActivity {
         });
 
         rvTodos = (RecyclerView) findViewById(R.id.rv_todo_items);
-        rvTodos.setLayoutManager(new WrapContentLinearLayoutManager(this));
+        rvTodos.setLayoutManager(new LinearLayoutManager(this));
         rvTodos.setItemAnimator(new DefaultItemAnimator());
         todoAdapter = new TodoAdapter(new ArrayList<TodoPoJo>());
         rvTodos.setAdapter(todoAdapter);
@@ -110,14 +109,11 @@ public class TodoActivity extends AppCompatActivity {
                 .map(new Function<TodoStore.State, Pair<TodoStore.State, DiffUtil.DiffResult>>() {
                     @Override
                     public Pair<TodoStore.State, DiffUtil.DiffResult> apply(TodoStore.State state) throws Exception {
-                        final boolean isProcessing = state.isProcessing;
                         DiffUtil.DiffResult result = null;
-                        if (!isProcessing) {
-                            final TodoAdapter.TodoDiffCallback callback = new TodoAdapter.TodoDiffCallback(todoAdapter.todos, state.todos);
-                            result = DiffUtil.calculateDiff(callback);
-                            todoAdapter.todos.clear();
-                            todoAdapter.todos.addAll(state.todos);
-                        }
+                        final TodoAdapter.TodoDiffCallback callback = new TodoAdapter.TodoDiffCallback(todoAdapter.todos, state.todos);
+                        result = DiffUtil.calculateDiff(callback);
+                        todoAdapter.todos.clear();
+                        todoAdapter.todos.addAll(state.todos);
                         return new Pair<>(state, result);
                     }
                 })
@@ -131,11 +127,9 @@ public class TodoActivity extends AppCompatActivity {
 
                     @Override
                     public void onNext(Pair<TodoStore.State, DiffUtil.DiffResult> pair) {
-                        if (!pair.getValue0().isProcessing) {
-                            DiffUtil.DiffResult diffResult = pair.getValue1();
-                            if (diffResult != null) {
-                                diffResult.dispatchUpdatesTo(todoAdapter);
-                            }
+                        DiffUtil.DiffResult diffResult = pair.getValue1();
+                        if (diffResult != null) {
+                            diffResult.dispatchUpdatesTo(todoAdapter);
                         }
                         request(1);
                     }
