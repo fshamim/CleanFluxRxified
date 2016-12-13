@@ -12,6 +12,10 @@ import com.fsh.poc.cfr.todos.TodoStore;
 import com.fsh.poc.cfr.todos.impl.TodoStoreImpl;
 
 import org.greenrobot.eventbus.EventBus;
+import org.mapdb.DB;
+import org.mapdb.DBMaker;
+
+import java.io.File;
 
 /**
  * Created by fshamim on 26/11/2016.
@@ -22,6 +26,7 @@ public class App extends Application {
     private UseCaseStore useCaseStore;
     private Dispatcher dispatcher;
     private ActionQueue eventQueue;
+    private DB db;
 
     @Override
     public void onCreate() {
@@ -53,4 +58,19 @@ public class App extends Application {
         }
         return eventQueue;
     }
+
+    public DB getDb() {
+        if (db == null) {
+            File dir = getFilesDir();
+            File dbDir = new File(dir.getAbsolutePath() + "/db");
+            dbDir.mkdir();
+            File dbFile = new File(dir.getAbsolutePath() + "/db/tododb");
+            db = DBMaker.fileDB(dbFile)
+                    .fileMmapEnableIfSupported()
+                    .make();
+        }
+
+        return db;
+    }
+
 }

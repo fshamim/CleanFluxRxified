@@ -31,11 +31,8 @@ import io.reactivex.Flowable;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.disposables.CompositeDisposable;
 import io.reactivex.functions.Function;
-import io.reactivex.internal.operators.flowable.FlowableOnBackpressureDrop;
 import io.reactivex.schedulers.Schedulers;
-import io.reactivex.subscribers.DefaultSubscriber;
 import io.reactivex.subscribers.DisposableSubscriber;
-import io.reactivex.subscribers.SerializedSubscriber;
 
 public class TodoActivity extends AppCompatActivity {
 
@@ -171,28 +168,26 @@ public class TodoActivity extends AppCompatActivity {
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        int id = item.getItemId();
-        switch (id) {
-            case R.id.action_clear_all:
-                EventBus.getDefault().post(new TodoStore.ClearAllAction());
-                return true;
-            case R.id.action_clear_all_completed:
-                EventBus.getDefault().post(new TodoStore.ClearAllCompletedAction());
-                return true;
-            case R.id.menu_sort_by_all:
-                item.setChecked(!item.isChecked());
-                EventBus.getDefault().post(new TodoStore.ApplyFilterAction(TodoStore.TodoFilter.ALL));
-                return true;
-            case R.id.menu_sort_by_completed:
-                item.setChecked(!item.isChecked());
-                EventBus.getDefault().post(new TodoStore.ApplyFilterAction(TodoStore.TodoFilter.COMPLETED));
-                return true;
-            case R.id.menu_sort_by_incompleted:
-                item.setChecked(!item.isChecked());
-                EventBus.getDefault().post(new TodoStore.ApplyFilterAction(TodoStore.TodoFilter.INCOMPLETE));
-                return true;
+        final int id = item.getItemId();
+        if (id == R.id.action_clear_all) {
+            EventBus.getDefault().post(new TodoStore.ClearAllAction());
+            return true;
+        } else if (id == R.id.action_clear_all_completed) {
+            EventBus.getDefault().post(new TodoStore.ClearAllCompletedAction());
+            return true;
+        } else if (id == R.id.menu_sort_by_all) {
+            item.setChecked(!item.isChecked());
+            EventBus.getDefault().post(new TodoStore.ApplyFilterAction(TodoStore.TodoFilter.ALL));
+            return true;
+        } else if (id == R.id.menu_sort_by_completed) {
+            item.setChecked(!item.isChecked());
+            EventBus.getDefault().post(new TodoStore.ApplyFilterAction(TodoStore.TodoFilter.COMPLETED));
+            return true;
+        } else if (id == R.id.menu_sort_by_incompleted) {
+            item.setChecked(!item.isChecked());
+            EventBus.getDefault().post(new TodoStore.ApplyFilterAction(TodoStore.TodoFilter.INCOMPLETE));
+            return true;
         }
-
         return super.onOptionsItemSelected(item);
     }
 

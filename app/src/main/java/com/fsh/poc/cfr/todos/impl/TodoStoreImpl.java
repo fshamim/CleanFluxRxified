@@ -5,7 +5,6 @@ import com.fsh.poc.cfr.todos.TodoPoJo;
 import com.fsh.poc.cfr.todos.TodoStore;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Random;
@@ -13,7 +12,6 @@ import java.util.concurrent.TimeUnit;
 
 import io.reactivex.Flowable;
 import io.reactivex.Observable;
-import io.reactivex.functions.Consumer;
 import io.reactivex.functions.Predicate;
 import io.reactivex.processors.BehaviorProcessor;
 
