@@ -1,0 +1,12 @@
+CREATE TABLE todo (
+    _id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    text TEXT NOT NULL,
+    is_completed INTEGER AS Boolean Default 0
+);
+
+insert_todo:
+INSERT INTO todo(text, is_completed)
+VALUES (?,?);
+
+select_all:
+SELECT * from todo;

@@ -14,14 +14,14 @@ import java.util.Set;
  * Created by fshamim on 08/12/2016.
  */
 
-public class TodoRepo implements IEntityRepo<String, TodoPoJo> {
+public class TodoRepoMapDB implements IEntityRepo<String, TodoPoJo> {
 
     private final DB db;
-    private final String name = TodoRepo.class.getSimpleName();
+    private final String name = TodoRepoMapDB.class.getSimpleName();
     private final String mapName = name + "_map";
     private final String idName = name + "_id";
 
-    public TodoRepo(DB db) {
+    public TodoRepoMapDB(DB db) {
         this.db = db;
         this.db.hashMap(mapName)
                 .counterEnable()

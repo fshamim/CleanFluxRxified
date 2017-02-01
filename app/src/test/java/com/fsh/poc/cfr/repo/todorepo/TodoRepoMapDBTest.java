@@ -1,6 +1,6 @@
 package com.fsh.poc.cfr.repo.todorepo;
 
-import com.fsh.poc.cfr.repos.todorepo.TodoRepo;
+import com.fsh.poc.cfr.repos.todorepo.TodoRepoMapDB;
 import com.fsh.poc.cfr.todos.TodoPoJo;
 
 import org.junit.After;
@@ -17,7 +17,7 @@ import static junit.framework.Assert.assertNull;
  * Created by fshamim on 08/12/2016.
  */
 
-public class TodoRepoTest {
+public class TodoRepoMapDBTest {
     public static class data {
         static int counter = 0;
 
@@ -32,7 +32,7 @@ public class TodoRepoTest {
 
     }
 
-    TodoRepo repo;
+    TodoRepoMapDB repo;
     DB db;
 
     @After
@@ -43,7 +43,7 @@ public class TodoRepoTest {
     @Before
     public void setup() {
         db = DBMaker.heapDB().make();
-        repo = new TodoRepo(db);
+        repo = new TodoRepoMapDB(db);
     }
 
     @Test
