@@ -23,10 +23,12 @@ import java.util.List;
 public class TodoAdapter extends RecyclerView.Adapter<TodoAdapter.TodoVH> {
 
     private static final String TAG = TodoAdapter.class.getSimpleName();
+    private final TodoStore store;
     List<TodoPoJo> todos;
 
-    public TodoAdapter(List<TodoPoJo> todos) {
+    public TodoAdapter(List<TodoPoJo> todos, TodoStore store) {
         this.todos = todos;
+        this.store = store;
     }
 
     @Override
@@ -37,15 +39,14 @@ public class TodoAdapter extends RecyclerView.Adapter<TodoAdapter.TodoVH> {
     }
 
     @Override
-    public void onBindViewHolder(TodoVH holder, int position) {
+    public void onBindViewHolder(final TodoVH holder, int position) {
         final TodoPoJo todo = todos.get(position);
         holder.tvText.setText(todo.getText());
         holder.chkIsDone.setChecked(todo.isCompleted());
         holder.chkIsDone.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                EventBus.getDefault().post(new TodoStore.ToggleTodoAction(todo.getId()));
-
+                store.toggleTodo(todo);
             }
         });
     }

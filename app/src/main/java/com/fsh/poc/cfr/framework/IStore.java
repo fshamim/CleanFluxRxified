@@ -5,5 +5,4 @@ package com.fsh.poc.cfr.framework;
  */
 
 public interface IStore {
-    void processAction(IAction action);
 }

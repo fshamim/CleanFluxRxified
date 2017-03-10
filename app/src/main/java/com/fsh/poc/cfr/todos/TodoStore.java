@@ -1,9 +1,7 @@
 package com.fsh.poc.cfr.todos;
 
-import com.fsh.poc.cfr.framework.IAction;
 import com.fsh.poc.cfr.framework.IStore;
 
-import java.io.Serializable;
 import java.util.List;
 
 import io.reactivex.Flowable;
@@ -15,6 +13,18 @@ import io.reactivex.Flowable;
 public interface TodoStore extends IStore {
 
     Flowable<State> asFlowable();
+
+    void insertTodo(TodoPoJo todo);
+
+    void toggleTodo(TodoPoJo todo);
+
+    void applyFilter(TodoFilter filter);
+
+    void clearAllTodos();
+
+    void clearCompletedTodos();
+
+    void refreshTodos();
 
     enum TodoFilter {
         ALL, COMPLETED, INCOMPLETE
@@ -59,75 +69,5 @@ public interface TodoStore extends IStore {
             result = 31 * result + (filter != null ? filter.hashCode() : 0);
             return result;
         }
-    }
-
-    public static class onNext implements Serializable {
-        final String inputEventClassName;
-        final State state;
-
-        public onNext(String inputEventClassName, State state) {
-            this.inputEventClassName = inputEventClassName;
-            this.state = state;
-        }
-    }
-
-    public static class onError extends onNext {
-        final Throwable e;
-
-        public onError(String inputEventClassName, State state, Throwable e) {
-            super(inputEventClassName, state);
-            this.e = e;
-        }
-    }
-
-    public static abstract class TodoStoreAction implements IAction {
-        @Override
-        public Class getAssociatedStore() {
-            return TodoStore.class;
-        }
-    }
-
-    public static class ToggleTodoAction extends TodoStoreAction {
-        public final String todoId;
-
-        public ToggleTodoAction(String todoId) {
-            this.todoId = todoId;
-        }
-    }
-
-    public static class AddTodoAction extends TodoStoreAction {
-        public final String text;
-
-        public AddTodoAction(String text) {
-            this.text = text;
-        }
-    }
-
-    public static class UpdateTodoAction extends TodoStoreAction {
-        public final TodoPoJo todo;
-
-        public UpdateTodoAction(TodoPoJo todo) {
-            this.todo = todo;
-        }
-    }
-
-    public static class ApplyFilterAction extends TodoStoreAction {
-        public final TodoFilter filter;
-
-        public ApplyFilterAction(TodoFilter filter) {
-            this.filter = filter;
-        }
-    }
-
-    public static class ClearAllCompletedAction extends TodoStoreAction {
-
-    }
-
-    public static class ClearAllAction extends TodoStoreAction {
-
-    }
-
-    public static class RefreshTodosAction extends TodoStoreAction {
-
     }
 }

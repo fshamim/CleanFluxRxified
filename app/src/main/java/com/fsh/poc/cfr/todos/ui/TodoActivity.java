@@ -1,6 +1,5 @@
 package com.fsh.poc.cfr.todos.ui;
 
-import android.content.Context;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.widget.SwipeRefreshLayout;
@@ -10,7 +9,6 @@ import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
-import android.util.AttributeSet;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -21,7 +19,6 @@ import com.fsh.poc.cfr.R;
 import com.fsh.poc.cfr.todos.TodoPoJo;
 import com.fsh.poc.cfr.todos.TodoStore;
 
-import org.greenrobot.eventbus.EventBus;
 import org.javatuples.Pair;
 
 import java.util.ArrayList;
@@ -29,7 +26,6 @@ import java.util.UUID;
 
 import io.reactivex.Flowable;
 import io.reactivex.android.schedulers.AndroidSchedulers;
-import io.reactivex.disposables.CompositeDisposable;
 import io.reactivex.functions.Function;
 import io.reactivex.schedulers.Schedulers;
 import io.reactivex.subscribers.DisposableSubscriber;
@@ -40,7 +36,7 @@ public class TodoActivity extends AppCompatActivity {
     TodoStore store;
     RecyclerView rvTodos;
     TodoAdapter todoAdapter;
-    CompositeDisposable subs;
+    DisposableSubscriber disposable;
     SwipeRefreshLayout ptrLayout;
     TodoStore.TodoFilter filter = TodoStore.TodoFilter.ALL;
     Menu menu;
@@ -61,7 +57,8 @@ public class TodoActivity extends AppCompatActivity {
             @Override
             public void onRefresh() {
                 Log.d(TAG, "onRefresh: ");
-                EventBus.getDefault().post(new TodoStore.RefreshTodosAction());
+                store.refreshTodos();
+
             }
         });
         FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
@@ -69,24 +66,23 @@ public class TodoActivity extends AppCompatActivity {
             @Override
             public void onClick(View view) {
                 Log.d(TAG, "onFabClick: ");
-                EventBus.getDefault().post(new TodoStore.AddTodoAction(UUID.randomUUID().toString()));
+                store.insertTodo(new TodoPoJo(null, UUID.randomUUID().toString(), false));
             }
         });
 
         rvTodos = (RecyclerView) findViewById(R.id.rv_todo_items);
         rvTodos.setLayoutManager(new LinearLayoutManager(this));
         rvTodos.setItemAnimator(new DefaultItemAnimator());
-        todoAdapter = new TodoAdapter(new ArrayList<TodoPoJo>());
+        todoAdapter = new TodoAdapter(new ArrayList<TodoPoJo>(), store);
         rvTodos.setAdapter(todoAdapter);
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        subs = new CompositeDisposable();
-        Flowable<TodoStore.State> o = store.asFlowable();
+        Flowable<TodoStore.State> f = store.asFlowable();
 
-        subs.add(o.observeOn(AndroidSchedulers.mainThread())
+        disposable = f.observeOn(AndroidSchedulers.mainThread())
                 .map(new Function<TodoStore.State, TodoStore.State>() {
                     @Override
                     public TodoStore.State apply(TodoStore.State state) throws Exception {
@@ -139,13 +135,14 @@ public class TodoActivity extends AppCompatActivity {
                     @Override
                     public void onComplete() {
                     }
-                }));
+                });
     }
 
     @Override
     protected void onPause() {
         super.onPause();
-        subs.dispose();
+        if (disposable != null && !disposable.isDisposed())
+            disposable.dispose();
 
     }
 
@@ -170,47 +167,24 @@ public class TodoActivity extends AppCompatActivity {
     public boolean onOptionsItemSelected(MenuItem item) {
         final int id = item.getItemId();
         if (id == R.id.action_clear_all) {
-            EventBus.getDefault().post(new TodoStore.ClearAllAction());
+            store.clearAllTodos();
             return true;
         } else if (id == R.id.action_clear_all_completed) {
-            EventBus.getDefault().post(new TodoStore.ClearAllCompletedAction());
+            store.clearCompletedTodos();
             return true;
         } else if (id == R.id.menu_sort_by_all) {
             item.setChecked(!item.isChecked());
-            EventBus.getDefault().post(new TodoStore.ApplyFilterAction(TodoStore.TodoFilter.ALL));
+            store.applyFilter(TodoStore.TodoFilter.ALL);
             return true;
         } else if (id == R.id.menu_sort_by_completed) {
             item.setChecked(!item.isChecked());
-            EventBus.getDefault().post(new TodoStore.ApplyFilterAction(TodoStore.TodoFilter.COMPLETED));
+            store.applyFilter(TodoStore.TodoFilter.COMPLETED);
             return true;
         } else if (id == R.id.menu_sort_by_incompleted) {
             item.setChecked(!item.isChecked());
-            EventBus.getDefault().post(new TodoStore.ApplyFilterAction(TodoStore.TodoFilter.INCOMPLETE));
+            store.applyFilter(TodoStore.TodoFilter.INCOMPLETE);
             return true;
         }
         return super.onOptionsItemSelected(item);
-    }
-
-    public static class WrapContentLinearLayoutManager extends LinearLayoutManager {
-        public WrapContentLinearLayoutManager(Context context) {
-            super(context);
-        }
-
-        public WrapContentLinearLayoutManager(Context context, int orientation, boolean reverseLayout) {
-            super(context, orientation, reverseLayout);
-        }
-
-        public WrapContentLinearLayoutManager(Context context, AttributeSet attrs, int defStyleAttr, int defStyleRes) {
-            super(context, attrs, defStyleAttr, defStyleRes);
-        }
-
-        @Override
-        public void onLayoutChildren(RecyclerView.Recycler recycler, RecyclerView.State state) {
-            try {
-                super.onLayoutChildren(recycler, state);
-            } catch (IndexOutOfBoundsException e) {
-                e.printStackTrace();
-            }
-        }
     }
 }
