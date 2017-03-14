@@ -1,54 +1,72 @@
 package com.fsh.poc.cfr.repos.todorepo;
 
 import android.content.Context;
-import android.database.sqlite.SQLiteDatabase;
-import android.database.sqlite.SQLiteOpenHelper;
+import android.database.Cursor;
 
 import com.fsh.poc.cfr.model.Todo;
 import com.fsh.poc.cfr.model.TodoModel;
-import com.fsh.poc.cfr.repos.IEntityRepo;
 import com.fsh.poc.cfr.repos.IEntityStore;
+import com.squareup.sqldelight.SqlDelightStatement;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
  * Created by fshamim on 23/01/2017.
  */
 
-public class TodoRepoSQL implements IEntityStore<TodoModel> {
+public class TodoRepoSQL implements IEntityStore<Todo> {
 
-    @Override
-    public void insert(TodoModel value) {
+    DbOpenHelper helper;
 
+    public TodoRepoSQL(Context context) {
+        helper = DbOpenHelper.getInstance(context);
     }
 
     @Override
-    public List<TodoModel> list() {
-        return null;
+    public void insert(Todo value) {
+        TodoModel.Insert_todo insert = new TodoModel.Insert_todo(helper.getWritableDatabase());
+        insert.bind(value.text(), value.is_completed());
+        insert.program.executeInsert();
     }
 
-    private final class DbOpenHelper extends SQLiteOpenHelper{
-
-        public static final int DB_VERSION = 1;
-
-        DbOpenHelper instance;
-
-        public DbOpenHelper(Context context) {
-            super(context, null, null, DB_VERSION);
+    @Override
+    public List<Todo> list() {
+        List<Todo> result = new ArrayList<>();
+        Cursor cursor = helper.getReadableDatabase().rawQuery(Todo.FACTORY.select_all().statement, new String[0]);
+        while (cursor.moveToNext()) {
+            result.add(Todo.FACTORY.select_allMapper().map(cursor));
         }
+        return result;
+    }
 
+    @Override
+    public void clear() {
+        helper.getWritableDatabase().delete(Todo.TABLE_NAME, null, null);
+    }
 
-        @Override
-        public void onCreate(SQLiteDatabase db) {
-            db.execSQL(TodoModel.CREATE_TABLE);
-            TodoModel.Insert_todo insert = new TodoModel.Insert_todo(db);
-            insert.bind("Todo test 1", false);
-            long id = insert.program.executeInsert();
+    @Override
+    public void delete(Todo value) {
+        TodoModel.Delete_todo_by_id delete = new TodoModel.Delete_todo_by_id(helper.getWritableDatabase());
+        delete.bind(value._id());
+        delete.program.executeUpdateDelete();
+    }
+
+    @Override
+    public Todo getById(long id) {
+        SqlDelightStatement query = Todo.FACTORY.select_by_id(id);
+        Cursor cursor = helper.getReadableDatabase().rawQuery(query.statement, query.args);
+        Todo todo = null;
+        while (cursor.moveToNext()) {
+            todo = Todo.FACTORY.select_by_idMapper().map(cursor);
         }
+        return todo;
+    }
 
-        @Override
-        public void onUpgrade(SQLiteDatabase sqLiteDatabase, int i, int i1) {
-
-        }
+    @Override
+    public void update(Todo value) {
+        TodoModel.Update_by_id update = new Todo.Update_by_id(helper.getWritableDatabase());
+        update.bind(value.text(), value.is_completed(), value._id());
+        update.program.executeUpdateDelete();
     }
 }

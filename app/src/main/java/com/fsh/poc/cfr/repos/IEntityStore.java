@@ -11,4 +11,12 @@ public interface IEntityStore<V> {
     void insert(V value);
 
     List<V> list();
+
+    void clear();
+
+    void delete(V value);
+
+    V getById(long id);
+
+    void update(V value);
 }

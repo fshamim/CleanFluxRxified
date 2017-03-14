@@ -9,4 +9,19 @@ INSERT INTO todo(text, is_completed)
 VALUES (?,?);
 
 select_all:
-SELECT * from todo;
+SELECT *
+FROM todo;
+
+delete_todo_by_id:
+DELETE FROM todo
+WHERE _id = ?;
+
+select_by_id:
+SELECT *
+FROM todo
+WHERE _id = ?;
+
+update_by_id:
+UPDATE todo
+SET text = ?, is_completed = ?
+WHERE _id = ?;

@@ -18,5 +18,4 @@ public abstract class Todo implements TodoModel {
             return new AutoValue_Todo(_id, text, is_completed);
         }
     });
-    public static final RowMapper<Todo> SELECT_ALL_MAPPER = FACTORY.select_allMapper();
 }
