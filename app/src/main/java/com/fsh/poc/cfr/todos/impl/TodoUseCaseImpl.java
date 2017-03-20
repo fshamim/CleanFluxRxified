@@ -1,16 +1,15 @@
 package com.fsh.poc.cfr.todos.impl;
 
 import com.fsh.poc.cfr.RxBus;
-import com.fsh.poc.cfr.todos.TodoPoJo;
-import com.fsh.poc.cfr.todos.TodoStore;
+import com.fsh.poc.cfr.model.Todo;
+import com.fsh.poc.cfr.repos.IEntityRepo;
+import com.fsh.poc.cfr.todos.TodoUseCase;
 
 import java.util.ArrayList;
 import java.util.List;
 
 import io.reactivex.Flowable;
-import io.reactivex.Observable;
 import io.reactivex.functions.Consumer;
-import io.reactivex.functions.Predicate;
 import io.reactivex.processors.BehaviorProcessor;
 import io.reactivex.schedulers.Schedulers;
 import io.reactivex.subscribers.DisposableSubscriber;
@@ -19,18 +18,17 @@ import io.reactivex.subscribers.DisposableSubscriber;
  * Created by fshamim on 27/11/2016.
  */
 
-public class TodoStoreImpl implements TodoStore {
+public class TodoUseCaseImpl implements TodoUseCase {
 
+    private final IEntityRepo<Todo> todoStore;
     BehaviorProcessor<State> relay;
-    List<TodoPoJo> todos;
     boolean isProcessing;
     TodoFilter filter;
-    int counter = 0;
     RxBus localBus;
 
-    public TodoStoreImpl() {
+    public TodoUseCaseImpl(IEntityRepo<Todo> todoStore) {
+        this.todoStore = todoStore;
         localBus = new RxBus();
-        todos = new ArrayList<>();
         isProcessing = false;
         filter = TodoFilter.ALL;
         relay = BehaviorProcessor.createDefault(getState());
@@ -39,16 +37,15 @@ public class TodoStoreImpl implements TodoStore {
 
     private State getState() {
         if (filter == TodoFilter.ALL) {
-            List<TodoPoJo> copy = new ArrayList<>();
-            copy.addAll(todos);
-            return new State(isProcessing, copy, filter);
+            return new State(isProcessing, new ArrayList<>(todoStore.list()), filter);
         } else {
-            List<TodoPoJo> filteredList = new ArrayList<>();
+            List<Todo> filteredList = new ArrayList<>();
+            List<Todo> todos = todoStore.list();
             for (int i = 0; i < todos.size(); ++i) {
-                TodoPoJo todo = todos.get(i);
-                if (filter == TodoFilter.COMPLETED && todo.isCompleted()) {
+                Todo todo = todos.get(i);
+                if (filter == TodoFilter.COMPLETED && todo.is_completed()) {
                     filteredList.add(todo);
-                } else if (filter == TodoFilter.INCOMPLETE && !todo.isCompleted()) {
+                } else if (filter == TodoFilter.INCOMPLETE && !todo.is_completed()) {
                     filteredList.add(todo);
                 }
             }
@@ -57,16 +54,11 @@ public class TodoStoreImpl implements TodoStore {
     }
 
     private void clearAllCompletedTodos() {
-        List<TodoPoJo> completedTodos = Observable.fromIterable(todos)
-                .filter(new Predicate<TodoPoJo>() {
-                    @Override
-                    public boolean test(TodoPoJo todoPoJo) throws Exception {
-                        return todoPoJo.isCompleted();
-                    }
-                })
-                .toList()
-                .blockingGet();
-        todos.removeAll(completedTodos);
+        for (Todo todo : todoStore.list()) {
+            if (todo.is_completed()) {
+                todoStore.delete(todo);
+            }
+        }
     }
 
     private void publishState() {
@@ -98,23 +90,18 @@ public class TodoStoreImpl implements TodoStore {
 //                        int randomDelay = new Random().nextInt(1200);
 //                        Observable.just(1).delay(randomDelay, TimeUnit.MILLISECONDS).blockingSubscribe();
                         if (o instanceof InserTodoEvent) {
-                            TodoPoJo t = ((InserTodoEvent) o).todo;
-                            todos.add(new TodoPoJo(counter++ + "", t.getText(), t.isCompleted()));
+                            Todo t = ((InserTodoEvent) o).todo;
+                            todoStore.insert(Todo.create(-1, t.text(), t.is_completed()));
                         } else if (o instanceof ClearAllCompletedEvent) {
                             clearAllCompletedTodos();
                         } else if (o instanceof ClearAllEvent) {
-                            todos.clear();
+                            todoStore.clear();
                         } else if (o instanceof ApplyFilterEvent) {
                             filter = ((ApplyFilterEvent) o).filter;
                         } else if (o instanceof ToggleTodoEvent) {
-                            for (int i = 0; i < todos.size(); ++i) {
-                                TodoPoJo todo = todos.get(i);
-                                if (todo.getId().equals(((ToggleTodoEvent) o).todo.getId())) {
-                                    TodoPoJo toggledTodo = new TodoPoJo(todo.getId(), todo.getText(), !todo.isCompleted());
-                                    todos.set(i, toggledTodo);
-                                    break;
-                                }
-                            }
+                            long id = ((ToggleTodoEvent) o).todo._id();
+                            Todo todo = todoStore.getById(id);
+                            todoStore.update(Todo.create(todo._id(), todo.text(), !todo.is_completed()));
                         }
                         updateAndPublishState(false);
                         request(1);
@@ -138,7 +125,7 @@ public class TodoStoreImpl implements TodoStore {
     }
 
     @Override
-    public void insertTodo(TodoPoJo todo) {
+    public void insertTodo(Todo todo) {
         localBus.send(new InserTodoEvent(todo));
     }
 
@@ -163,14 +150,14 @@ public class TodoStoreImpl implements TodoStore {
     }
 
     @Override
-    public void toggleTodo(TodoPoJo todo) {
+    public void toggleTodo(Todo todo) {
         localBus.send(new ToggleTodoEvent(todo));
     }
 
     private class InserTodoEvent {
-        public final TodoPoJo todo;
+        public final Todo todo;
 
-        public InserTodoEvent(TodoPoJo todo) {
+        public InserTodoEvent(Todo todo) {
             this.todo = todo;
         }
     }
@@ -193,9 +180,9 @@ public class TodoStoreImpl implements TodoStore {
     }
 
     private class ToggleTodoEvent {
-        public final TodoPoJo todo;
+        public final Todo todo;
 
-        public ToggleTodoEvent(TodoPoJo todo) {
+        public ToggleTodoEvent(Todo todo) {
             this.todo = todo;
         }
     }

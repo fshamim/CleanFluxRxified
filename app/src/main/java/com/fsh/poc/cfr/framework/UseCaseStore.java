@@ -9,19 +9,19 @@ import java.util.HashMap;
 
 public class UseCaseStore {
 
-    HashMap<String, IStore> map = new HashMap<>();
+    HashMap<String, IUseCase> map = new HashMap<>();
 
-    public void registerStore(Class clazz, IStore store) {
+    public void registerStore(Class clazz, IUseCase store) {
         map.put(clazz.getCanonicalName(), store);
     }
 
     public <T> T getStore(String canonicalName) {
-        IStore store = map.get(canonicalName);
+        IUseCase store = map.get(canonicalName);
         return (T) store;
     }
 
     public <T> T getStore(Class clazz) {
-        IStore store = map.get(clazz.getCanonicalName());
+        IUseCase store = map.get(clazz.getCanonicalName());
         return (T) store;
     }
 }

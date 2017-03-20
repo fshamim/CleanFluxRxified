@@ -1,27 +1,22 @@
 package com.fsh.poc.cfr.repos;
 
 import java.util.List;
-import java.util.Set;
 
 /**
- * Created by fshamim on 15.08.15.
+ * Created by fshamim on 23/01/2017.
  */
-public interface IEntityRepo<K, V> {
 
-    V insert(V entity);
+public interface IEntityRepo<V> {
 
-    V update(V entity);
-
-    V delete(K key);
-
-    V get(K key);
+    void insert(V value);
 
     List<V> list();
 
-    int size();
-
-    Set<K> keys();
-
-
     void clear();
+
+    void delete(V value);
+
+    V getById(long id);
+
+    void update(V value);
 }

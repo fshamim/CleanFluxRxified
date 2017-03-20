@@ -1,12 +1,12 @@
 package com.fsh.poc.cfr.test;
 
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
 import android.support.test.InstrumentationRegistry;
 import android.support.test.filters.SmallTest;
 import android.support.test.runner.AndroidJUnit4;
 
 import com.fsh.poc.cfr.model.Todo;
+import com.fsh.poc.cfr.model.TodoModel;
+import com.fsh.poc.cfr.repos.todorepo.DbOpenHelper;
 import com.fsh.poc.cfr.repos.todorepo.TodoRepoSQL;
 
 import org.junit.After;
@@ -19,7 +19,6 @@ import java.util.Random;
 import java.util.UUID;
 
 import static junit.framework.Assert.assertNotNull;
-import static junit.framework.Assert.assertNull;
 import static junit.framework.Assert.assertTrue;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
@@ -35,14 +34,30 @@ public class TodoRepoSQLiteTest {
 
 
     private TodoRepoSQL repo;
+    private DbOpenHelper inmemDB;
 
     @Before
     public void setup() {
-        repo = new TodoRepoSQL(InstrumentationRegistry.getTargetContext());
+        inmemDB = DbOpenHelper.getInMemoryInstance(InstrumentationRegistry.getTargetContext());
+        repo = new TodoRepoSQL(inmemDB);
+        initTestData();
+    }
+
+    private void initTestData() {
+        TodoModel.Insert_todo insert = new TodoModel.Insert_todo(inmemDB.getWritableDatabase());
+        insert.bind("Todo test 1", false);
+        insert.program.executeInsert();
+        insert.bind("Todo test 2", false);
+        insert.program.executeInsert();
+        insert.bind("Todo test 3", false);
+        insert.program.executeInsert();
+        insert.bind("Todo test 4", false);
+        insert.program.executeInsert();
     }
 
     @After
     public void tearDown() {
+        inmemDB.close();
     }
 
     @Test
@@ -121,25 +136,7 @@ public class TodoRepoSQLiteTest {
         assertThat(list.size(), is(4));
         //we want to toggle all the  to completion
         for (int i = 0; i < list.size(); ++i) {
-            final int finalI = i;
-            repo.update(new Todo() {
-                @Override
-                public long _id() {
-                    return list.get(finalI)._id();
-                }
-
-                @NonNull
-                @Override
-                public String text() {
-                    return list.get(finalI).text();
-                }
-
-                @Nullable
-                @Override
-                public Boolean is_completed() {
-                    return Boolean.TRUE;
-                }
-            });
+            repo.update(Todo.create(list.get(i)._id(), list.get(i).text(), Boolean.TRUE));
         }
 
         List<Todo> list2 = repo.list();
@@ -151,24 +148,6 @@ public class TodoRepoSQLiteTest {
     }
 
     private Todo createRandomTodo() {
-        return new Todo() {
-            @Override
-            public long _id() {
-                return 0;
-            }
-
-            @NonNull
-            @Override
-            public String text() {
-                return UUID.randomUUID().toString();
-            }
-
-            @Nullable
-            @Override
-            public Boolean is_completed() {
-                int i = new Random().nextInt(1);
-                return i == 1 ? Boolean.TRUE : Boolean.FALSE;
-            }
-        };
+        return Todo.create(0, UUID.randomUUID().toString(), new Random().nextInt(1) == 1 ? Boolean.TRUE : Boolean.FALSE);
     }
 }

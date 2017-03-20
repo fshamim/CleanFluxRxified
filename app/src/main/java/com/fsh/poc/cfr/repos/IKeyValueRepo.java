@@ -7,10 +7,10 @@ package com.fsh.poc.cfr.repos;
 public interface IKeyValueRepo {
 
     String name = "prefs";
-    
+
     <T> T insert(String key, Object value);
 
-    <T> T get(String key);
+    <T> T get(String key, T defaultValue);
 
     <T> T delete(String key);
 

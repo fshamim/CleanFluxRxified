@@ -5,7 +5,7 @@ import android.database.Cursor;
 
 import com.fsh.poc.cfr.model.Todo;
 import com.fsh.poc.cfr.model.TodoModel;
-import com.fsh.poc.cfr.repos.IEntityStore;
+import com.fsh.poc.cfr.repos.IEntityRepo;
 import com.squareup.sqldelight.SqlDelightStatement;
 
 import java.util.ArrayList;
@@ -15,12 +15,12 @@ import java.util.List;
  * Created by fshamim on 23/01/2017.
  */
 
-public class TodoRepoSQL implements IEntityStore<Todo> {
+public class TodoRepoSQL implements IEntityRepo<Todo> {
 
     DbOpenHelper helper;
 
-    public TodoRepoSQL(Context context) {
-        helper = DbOpenHelper.getInstance(context);
+    public TodoRepoSQL(DbOpenHelper helper) {
+        this.helper = helper;
     }
 
     @Override

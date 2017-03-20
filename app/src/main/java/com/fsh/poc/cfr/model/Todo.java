@@ -18,4 +18,8 @@ public abstract class Todo implements TodoModel {
             return new AutoValue_Todo(_id, text, is_completed);
         }
     });
+
+    public static Todo create(long _id, @NonNull String text, @Nullable Boolean is_completed) {
+        return FACTORY.creator.create(_id, text, is_completed);
+    }
 }

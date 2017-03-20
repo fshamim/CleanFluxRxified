@@ -1,6 +1,7 @@
 package com.fsh.poc.cfr.todos;
 
-import com.fsh.poc.cfr.framework.IStore;
+import com.fsh.poc.cfr.framework.IUseCase;
+import com.fsh.poc.cfr.model.Todo;
 
 import java.util.List;
 
@@ -10,13 +11,13 @@ import io.reactivex.Flowable;
  * Created by fshamim on 26/11/2016.
  */
 
-public interface TodoStore extends IStore {
+public interface TodoUseCase extends IUseCase {
 
     Flowable<State> asFlowable();
 
-    void insertTodo(TodoPoJo todo);
+    void insertTodo(Todo todo);
 
-    void toggleTodo(TodoPoJo todo);
+    void toggleTodo(Todo todo);
 
     void applyFilter(TodoFilter filter);
 
@@ -32,10 +33,10 @@ public interface TodoStore extends IStore {
 
     public static class State {
         public final boolean isProcessing;
-        public final List<TodoPoJo> todos;
+        public final List<Todo> todos;
         public final TodoFilter filter;
 
-        public State(boolean isProcessing, List<TodoPoJo> todos, TodoFilter filter) {
+        public State(boolean isProcessing, List<Todo> todos, TodoFilter filter) {
             this.isProcessing = isProcessing;
             this.todos = todos;
             this.filter = filter;

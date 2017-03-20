@@ -1,5 +1,6 @@
 package com.fsh.poc.cfr.todos.ui;
 
+import android.content.Context;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.widget.SwipeRefreshLayout;
@@ -9,6 +10,7 @@ import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
+import android.util.AttributeSet;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -16,8 +18,8 @@ import android.view.View;
 
 import com.fsh.poc.cfr.App;
 import com.fsh.poc.cfr.R;
-import com.fsh.poc.cfr.todos.TodoPoJo;
-import com.fsh.poc.cfr.todos.TodoStore;
+import com.fsh.poc.cfr.model.Todo;
+import com.fsh.poc.cfr.todos.TodoUseCase;
 
 import org.javatuples.Pair;
 
@@ -33,12 +35,12 @@ import io.reactivex.subscribers.DisposableSubscriber;
 public class TodoActivity extends AppCompatActivity {
 
     private static final String TAG = TodoActivity.class.getSimpleName();
-    TodoStore store;
+    TodoUseCase store;
     RecyclerView rvTodos;
     TodoAdapter todoAdapter;
     DisposableSubscriber disposable;
     SwipeRefreshLayout ptrLayout;
-    TodoStore.TodoFilter filter = TodoStore.TodoFilter.ALL;
+    TodoUseCase.TodoFilter filter = TodoUseCase.TodoFilter.ALL;
     Menu menu;
 
     @Override
@@ -49,7 +51,7 @@ public class TodoActivity extends AppCompatActivity {
         setSupportActionBar(toolbar);
 
         App app = (App) getApplication();
-        store = app.getUseCaseStore().getStore(TodoStore.class);
+        store = app.getUseCaseStore().getStore(TodoUseCase.class);
 
 
         ptrLayout = (SwipeRefreshLayout) findViewById(R.id.ptr_layout);
@@ -66,26 +68,26 @@ public class TodoActivity extends AppCompatActivity {
             @Override
             public void onClick(View view) {
                 Log.d(TAG, "onFabClick: ");
-                store.insertTodo(new TodoPoJo(null, UUID.randomUUID().toString(), false));
+                store.insertTodo(Todo.create(0, UUID.randomUUID().toString(), false));
             }
         });
 
         rvTodos = (RecyclerView) findViewById(R.id.rv_todo_items);
         rvTodos.setLayoutManager(new LinearLayoutManager(this));
         rvTodos.setItemAnimator(new DefaultItemAnimator());
-        todoAdapter = new TodoAdapter(new ArrayList<TodoPoJo>(), store);
+        todoAdapter = new TodoAdapter(new ArrayList<Todo>(), store);
         rvTodos.setAdapter(todoAdapter);
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        Flowable<TodoStore.State> f = store.asFlowable();
+        Flowable<TodoUseCase.State> f = store.asFlowable();
 
         disposable = f.observeOn(AndroidSchedulers.mainThread())
-                .map(new Function<TodoStore.State, TodoStore.State>() {
+                .map(new Function<TodoUseCase.State, TodoUseCase.State>() {
                     @Override
-                    public TodoStore.State apply(TodoStore.State state) throws Exception {
+                    public TodoUseCase.State apply(TodoUseCase.State state) throws Exception {
                         final boolean isProcessing = state.isProcessing;
                         ptrLayout.postDelayed(new Runnable() {
                             @Override
@@ -99,19 +101,22 @@ public class TodoActivity extends AppCompatActivity {
                     }
                 })
                 .subscribeOn(Schedulers.io())
-                .map(new Function<TodoStore.State, Pair<TodoStore.State, DiffUtil.DiffResult>>() {
+                .map(new Function<TodoUseCase.State, Pair<TodoUseCase.State, DiffUtil.DiffResult>>() {
                     @Override
-                    public Pair<TodoStore.State, DiffUtil.DiffResult> apply(TodoStore.State state) throws Exception {
+                    public Pair<TodoUseCase.State, DiffUtil.DiffResult> apply(TodoUseCase.State state) throws Exception {
                         DiffUtil.DiffResult result = null;
-                        final TodoAdapter.TodoDiffCallback callback = new TodoAdapter.TodoDiffCallback(todoAdapter.todos, state.todos);
-                        result = DiffUtil.calculateDiff(callback);
+                        // only calculate the diff if not empty
+                        if (!todoAdapter.todos.isEmpty()) {
+                            final TodoAdapter.TodoDiffCallback callback = new TodoAdapter.TodoDiffCallback(todoAdapter.todos, state.todos);
+                            result = DiffUtil.calculateDiff(callback);
+                        }
                         todoAdapter.todos.clear();
                         todoAdapter.todos.addAll(state.todos);
                         return new Pair<>(state, result);
                     }
                 })
                 .observeOn(AndroidSchedulers.mainThread())
-                .subscribeWith(new DisposableSubscriber<Pair<TodoStore.State, DiffUtil.DiffResult>>() {
+                .subscribeWith(new DisposableSubscriber<Pair<TodoUseCase.State, DiffUtil.DiffResult>>() {
 
                     @Override
                     protected void onStart() {
@@ -119,10 +124,12 @@ public class TodoActivity extends AppCompatActivity {
                     }
 
                     @Override
-                    public void onNext(Pair<TodoStore.State, DiffUtil.DiffResult> pair) {
+                    public void onNext(Pair<TodoUseCase.State, DiffUtil.DiffResult> pair) {
                         DiffUtil.DiffResult diffResult = pair.getValue1();
                         if (diffResult != null) {
                             diffResult.dispatchUpdatesTo(todoAdapter);
+                        } else {
+                            todoAdapter.notifyDataSetChanged();
                         }
                         request(1);
                     }
@@ -157,9 +164,9 @@ public class TodoActivity extends AppCompatActivity {
     @Override
     public boolean onPrepareOptionsMenu(Menu menu) {
         super.onPrepareOptionsMenu(menu);
-        menu.findItem(R.id.menu_sort_by_all).setChecked(filter == TodoStore.TodoFilter.ALL);
-        menu.findItem(R.id.menu_sort_by_completed).setChecked(filter == TodoStore.TodoFilter.COMPLETED);
-        menu.findItem(R.id.menu_sort_by_incompleted).setChecked(filter == TodoStore.TodoFilter.INCOMPLETE);
+        menu.findItem(R.id.menu_sort_by_all).setChecked(filter == TodoUseCase.TodoFilter.ALL);
+        menu.findItem(R.id.menu_sort_by_completed).setChecked(filter == TodoUseCase.TodoFilter.COMPLETED);
+        menu.findItem(R.id.menu_sort_by_incompleted).setChecked(filter == TodoUseCase.TodoFilter.INCOMPLETE);
         return true;
     }
 
@@ -174,17 +181,45 @@ public class TodoActivity extends AppCompatActivity {
             return true;
         } else if (id == R.id.menu_sort_by_all) {
             item.setChecked(!item.isChecked());
-            store.applyFilter(TodoStore.TodoFilter.ALL);
+            store.applyFilter(TodoUseCase.TodoFilter.ALL);
             return true;
         } else if (id == R.id.menu_sort_by_completed) {
             item.setChecked(!item.isChecked());
-            store.applyFilter(TodoStore.TodoFilter.COMPLETED);
+            store.applyFilter(TodoUseCase.TodoFilter.COMPLETED);
             return true;
         } else if (id == R.id.menu_sort_by_incompleted) {
             item.setChecked(!item.isChecked());
-            store.applyFilter(TodoStore.TodoFilter.INCOMPLETE);
+            store.applyFilter(TodoUseCase.TodoFilter.INCOMPLETE);
             return true;
         }
         return super.onOptionsItemSelected(item);
+    }
+
+    public static class WrapContentLinearLayoutManager extends LinearLayoutManager {
+        public WrapContentLinearLayoutManager(Context context) {
+            super(context);
+        }
+
+        public WrapContentLinearLayoutManager(Context context, int orientation, boolean reverseLayout) {
+            super(context, orientation, reverseLayout);
+        }
+
+        public WrapContentLinearLayoutManager(Context context, AttributeSet attrs, int defStyleAttr, int defStyleRes) {
+            super(context, attrs, defStyleAttr, defStyleRes);
+        }
+
+        @Override
+        public boolean supportsPredictiveItemAnimations() {
+            return false;
+        }
+
+        //        @Override
+//        public void onLayoutChildren(RecyclerView.Recycler recycler, RecyclerView.State state) {
+//            try {
+//                super.onLayoutChildren(recycler, state);
+//            } catch (IndexOutOfBoundsException e) {
+//                e.printStackTrace();
+//            }
+//        }
     }
 }

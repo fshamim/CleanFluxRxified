@@ -1,5 +1,6 @@
 package com.fsh.poc.cfr.todos.ui;
 
+import android.support.annotation.Nullable;
 import android.support.v7.util.DiffUtil;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
@@ -9,10 +10,8 @@ import android.widget.CheckBox;
 import android.widget.TextView;
 
 import com.fsh.poc.cfr.R;
-import com.fsh.poc.cfr.todos.TodoPoJo;
-import com.fsh.poc.cfr.todos.TodoStore;
-
-import org.greenrobot.eventbus.EventBus;
+import com.fsh.poc.cfr.model.Todo;
+import com.fsh.poc.cfr.todos.TodoUseCase;
 
 import java.util.List;
 
@@ -23,10 +22,10 @@ import java.util.List;
 public class TodoAdapter extends RecyclerView.Adapter<TodoAdapter.TodoVH> {
 
     private static final String TAG = TodoAdapter.class.getSimpleName();
-    private final TodoStore store;
-    List<TodoPoJo> todos;
+    private final TodoUseCase store;
+    List<Todo> todos;
 
-    public TodoAdapter(List<TodoPoJo> todos, TodoStore store) {
+    public TodoAdapter(List<Todo> todos, TodoUseCase store) {
         this.todos = todos;
         this.store = store;
     }
@@ -40,9 +39,9 @@ public class TodoAdapter extends RecyclerView.Adapter<TodoAdapter.TodoVH> {
 
     @Override
     public void onBindViewHolder(final TodoVH holder, int position) {
-        final TodoPoJo todo = todos.get(position);
-        holder.tvText.setText(todo.getText());
-        holder.chkIsDone.setChecked(todo.isCompleted());
+        final Todo todo = todos.get(position);
+        holder.tvText.setText(todo.text());
+        holder.chkIsDone.setChecked(todo.is_completed());
         holder.chkIsDone.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -73,10 +72,10 @@ public class TodoAdapter extends RecyclerView.Adapter<TodoAdapter.TodoVH> {
 
         public static final String TODO_TEXT = "TODO_TEXT";
         public static final String TODO_IS_COMPLETED = "TODO_IS_COMPLETED";
-        final List<TodoPoJo> oldList;
-        final List<TodoPoJo> newList;
+        final List<Todo> oldList;
+        final List<Todo> newList;
 
-        public TodoDiffCallback(List<TodoPoJo> oldList, List<TodoPoJo> newList) {
+        public TodoDiffCallback(List<Todo> oldList, List<Todo> newList) {
             this.oldList = oldList;
             this.newList = newList;
         }
@@ -94,7 +93,7 @@ public class TodoAdapter extends RecyclerView.Adapter<TodoAdapter.TodoVH> {
 
         @Override
         public boolean areItemsTheSame(int oldItemPosition, int newItemPosition) {
-            return oldList.get(oldItemPosition).getId().equals(newList.get(newItemPosition).getId());
+            return oldList.get(oldItemPosition)._id() == newList.get(newItemPosition)._id();
         }
 
         @Override
@@ -102,21 +101,10 @@ public class TodoAdapter extends RecyclerView.Adapter<TodoAdapter.TodoVH> {
             return oldList.get(oldItemPosition).equals(newList.get(newItemPosition));
         }
 
-//        @Nullable
-//        @Override
-//        public Object getChangePayload(int oldItemPosition, int newItemPosition) {
-//            TodoPoJo oldTodo = oldList.get(oldItemPosition);
-//            TodoPoJo newTodo = newList.get(oldItemPosition);
-//            Bundle bundle = new Bundle();
-//            if (!oldTodo.getText().equals(newTodo.getText())) {
-//                bundle.putString(TODO_TEXT, newTodo.getText());
-//            }
-//
-//            if (oldTodo.isCompleted() != newTodo.isCompleted()) {
-//                bundle.putBoolean(TODO_IS_COMPLETED, newTodo.isCompleted());
-//            }
-//            if (bundle.size() == 0) bundle = null;
-//            return bundle;
-//        }
+        @Nullable
+        @Override
+        public Object getChangePayload(int oldItemPosition, int newItemPosition) {
+            return super.getChangePayload(oldItemPosition, newItemPosition);
+        }
     }
 }

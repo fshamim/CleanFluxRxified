@@ -12,33 +12,30 @@ import com.fsh.poc.cfr.model.TodoModel;
 public final class DbOpenHelper extends SQLiteOpenHelper {
 
     public static final int DB_VERSION = 1;
+    private static final String DB_NAME = "todo.db";
 
     public static DbOpenHelper instance;
 
     public static DbOpenHelper getInstance(Context context) {
         if (instance == null) {
-            instance = new DbOpenHelper(context);
+            instance = new DbOpenHelper(context, DB_NAME);
         }
         return instance;
     }
 
-    private DbOpenHelper(Context context) {
-        super(context, null, null, DB_VERSION);
+    public static DbOpenHelper getInMemoryInstance(Context context) {
+        return new DbOpenHelper(context, null);
+    }
+
+
+    private DbOpenHelper(Context context, String dbname) {
+        super(context, dbname, null, DB_VERSION);
     }
 
 
     @Override
     public void onCreate(SQLiteDatabase db) {
         db.execSQL(TodoModel.CREATE_TABLE);
-        TodoModel.Insert_todo insert = new TodoModel.Insert_todo(db);
-        insert.bind("Todo test 1", false);
-        insert.program.executeInsert();
-        insert.bind("Todo test 2", false);
-        insert.program.executeInsert();
-        insert.bind("Todo test 3", false);
-        insert.program.executeInsert();
-        insert.bind("Todo test 4", false);
-        insert.program.executeInsert();
     }
 
     @Override
