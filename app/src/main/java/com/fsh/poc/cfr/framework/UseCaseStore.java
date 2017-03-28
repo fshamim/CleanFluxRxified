@@ -15,11 +15,6 @@ public class UseCaseStore {
         map.put(clazz.getCanonicalName(), store);
     }
 
-    public <T> T getStore(String canonicalName) {
-        IUseCase store = map.get(canonicalName);
-        return (T) store;
-    }
-
     public <T> T getStore(Class clazz) {
         IUseCase store = map.get(clazz.getCanonicalName());
         return (T) store;

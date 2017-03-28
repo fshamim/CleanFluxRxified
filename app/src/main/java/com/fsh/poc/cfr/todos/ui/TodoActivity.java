@@ -35,7 +35,7 @@ import io.reactivex.subscribers.DisposableSubscriber;
 public class TodoActivity extends AppCompatActivity {
 
     private static final String TAG = TodoActivity.class.getSimpleName();
-    TodoUseCase store;
+    TodoUseCase todoUseCase;
     RecyclerView rvTodos;
     TodoAdapter todoAdapter;
     DisposableSubscriber disposable;
@@ -51,7 +51,7 @@ public class TodoActivity extends AppCompatActivity {
         setSupportActionBar(toolbar);
 
         App app = (App) getApplication();
-        store = app.getUseCaseStore().getStore(TodoUseCase.class);
+        todoUseCase = app.getUseCaseStore().getStore(TodoUseCase.class);
 
 
         ptrLayout = (SwipeRefreshLayout) findViewById(R.id.ptr_layout);
@@ -59,7 +59,7 @@ public class TodoActivity extends AppCompatActivity {
             @Override
             public void onRefresh() {
                 Log.d(TAG, "onRefresh: ");
-                store.refreshTodos();
+                todoUseCase.refreshTodos();
 
             }
         });
@@ -68,21 +68,21 @@ public class TodoActivity extends AppCompatActivity {
             @Override
             public void onClick(View view) {
                 Log.d(TAG, "onFabClick: ");
-                store.insertTodo(Todo.create(0, UUID.randomUUID().toString(), false));
+                todoUseCase.insertTodo(Todo.create(0, UUID.randomUUID().toString(), false));
             }
         });
 
         rvTodos = (RecyclerView) findViewById(R.id.rv_todo_items);
         rvTodos.setLayoutManager(new LinearLayoutManager(this));
         rvTodos.setItemAnimator(new DefaultItemAnimator());
-        todoAdapter = new TodoAdapter(new ArrayList<Todo>(), store);
+        todoAdapter = new TodoAdapter(new ArrayList<Todo>(), todoUseCase);
         rvTodos.setAdapter(todoAdapter);
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        Flowable<TodoUseCase.State> f = store.asFlowable();
+        Flowable<TodoUseCase.State> f = todoUseCase.asFlowable();
 
         disposable = f.observeOn(AndroidSchedulers.mainThread())
                 .map(new Function<TodoUseCase.State, TodoUseCase.State>() {
@@ -174,52 +174,25 @@ public class TodoActivity extends AppCompatActivity {
     public boolean onOptionsItemSelected(MenuItem item) {
         final int id = item.getItemId();
         if (id == R.id.action_clear_all) {
-            store.clearAllTodos();
+            todoUseCase.clearAllTodos();
             return true;
         } else if (id == R.id.action_clear_all_completed) {
-            store.clearCompletedTodos();
+            todoUseCase.clearCompletedTodos();
             return true;
         } else if (id == R.id.menu_sort_by_all) {
             item.setChecked(!item.isChecked());
-            store.applyFilter(TodoUseCase.TodoFilter.ALL);
+            todoUseCase.applyFilter(TodoUseCase.TodoFilter.ALL);
             return true;
         } else if (id == R.id.menu_sort_by_completed) {
             item.setChecked(!item.isChecked());
-            store.applyFilter(TodoUseCase.TodoFilter.COMPLETED);
+            todoUseCase.applyFilter(TodoUseCase.TodoFilter.COMPLETED);
             return true;
         } else if (id == R.id.menu_sort_by_incompleted) {
             item.setChecked(!item.isChecked());
-            store.applyFilter(TodoUseCase.TodoFilter.INCOMPLETE);
+            todoUseCase.applyFilter(TodoUseCase.TodoFilter.INCOMPLETE);
             return true;
         }
         return super.onOptionsItemSelected(item);
     }
 
-    public static class WrapContentLinearLayoutManager extends LinearLayoutManager {
-        public WrapContentLinearLayoutManager(Context context) {
-            super(context);
-        }
-
-        public WrapContentLinearLayoutManager(Context context, int orientation, boolean reverseLayout) {
-            super(context, orientation, reverseLayout);
-        }
-
-        public WrapContentLinearLayoutManager(Context context, AttributeSet attrs, int defStyleAttr, int defStyleRes) {
-            super(context, attrs, defStyleAttr, defStyleRes);
-        }
-
-        @Override
-        public boolean supportsPredictiveItemAnimations() {
-            return false;
-        }
-
-        //        @Override
-//        public void onLayoutChildren(RecyclerView.Recycler recycler, RecyclerView.State state) {
-//            try {
-//                super.onLayoutChildren(recycler, state);
-//            } catch (IndexOutOfBoundsException e) {
-//                e.printStackTrace();
-//            }
-//        }
-    }
 }

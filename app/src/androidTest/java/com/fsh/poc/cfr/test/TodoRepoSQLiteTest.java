@@ -6,6 +6,7 @@ import android.support.test.runner.AndroidJUnit4;
 
 import com.fsh.poc.cfr.model.Todo;
 import com.fsh.poc.cfr.model.TodoModel;
+import com.fsh.poc.cfr.repos.IEntityRepo;
 import com.fsh.poc.cfr.repos.todorepo.DbOpenHelper;
 import com.fsh.poc.cfr.repos.todorepo.TodoRepoSQL;
 
@@ -33,7 +34,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 public class TodoRepoSQLiteTest {
 
 
-    private TodoRepoSQL repo;
+    private IEntityRepo<Todo> repo;
     private DbOpenHelper inmemDB;
 
     @Before
@@ -70,7 +71,7 @@ public class TodoRepoSQLiteTest {
     @Test
     public void insertStressTest() {
         repo.clear();
-        final int SIZE = 10;
+        final int SIZE = 10000;
         for (int i = 0; i < SIZE; ++i) {
             Todo todo = createRandomTodo();
             repo.insert(todo);

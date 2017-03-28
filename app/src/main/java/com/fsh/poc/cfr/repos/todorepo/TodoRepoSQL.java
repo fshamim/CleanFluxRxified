@@ -1,6 +1,5 @@
 package com.fsh.poc.cfr.repos.todorepo;
 
-import android.content.Context;
 import android.database.Cursor;
 
 import com.fsh.poc.cfr.model.Todo;
@@ -57,7 +56,7 @@ public class TodoRepoSQL implements IEntityRepo<Todo> {
         SqlDelightStatement query = Todo.FACTORY.select_by_id(id);
         Cursor cursor = helper.getReadableDatabase().rawQuery(query.statement, query.args);
         Todo todo = null;
-        while (cursor.moveToNext()) {
+        if (cursor.moveToNext()) {
             todo = Todo.FACTORY.select_by_idMapper().map(cursor);
         }
         return todo;
